@@ -1,0 +1,8 @@
+*.hds
+*.cbc
+*.list
+*.out
+output2/
+*.uzfcb2.bin
+*.go
+*.chk
