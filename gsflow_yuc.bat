@@ -1,0 +1,2 @@
+gsflow_obs_beta.exe Yuc_gsflow.control
+pause

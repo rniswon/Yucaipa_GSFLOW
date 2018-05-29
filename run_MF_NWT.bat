@@ -1,0 +1,2 @@
+MF_NWT.exe yucaipa_modflow_rch.nam
+pause
