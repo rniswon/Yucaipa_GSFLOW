@@ -1,2 +1,1 @@
-gsflow_obs_beta.exe Yuc_gsflow.control
-pause
+gsflow6.exe Yuc_gsflow.control

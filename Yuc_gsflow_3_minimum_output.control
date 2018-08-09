@@ -9,7 +9,7 @@ parameter_check_flag
 model_mode
 1
 4
-GSFLOW
+GSFLOW5
 ####
 start_time
 6
@@ -24,7 +24,7 @@ start_time
 end_time
 6
 1
-2005
+2014
 12
 31
 0
@@ -34,7 +34,7 @@ end_time
 modflow_name
 1
 4
-yucaipa.nam
+yucaipa_min.nam
 ####
 modflow_time_zero
 6
@@ -54,7 +54,7 @@ param_file
 data_file
 1
 4
-./input/Yucaipa_3.data
+./input/Yucaipa.data
 ####
 precip_module
 1
@@ -188,17 +188,17 @@ init_vars_from_file
 var_init_file
 1
 4
-./output2/prms_ic_2.out
+prms_ic_1.out
 ####
 save_vars_to_file
 1
 1
-1
+0
 ####
 var_save_file
 1
 4
-./output2/prms_ic_3.out
+prms_ic_3.out
 ####
 print_debug
 1
@@ -298,5 +298,5 @@ external_transferON_OFF
 external_transfer_file
 1
 4
-yucaipa_rech.dat
+yucaipa_rech2.dat
 

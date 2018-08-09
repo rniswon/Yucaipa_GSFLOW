@@ -1,2 +1,1 @@
-gsflow5_beta.exe Yuc_gsflow_3_minimum_output.control
-pause
+gsflow6.exe Yuc_gsflow_min.control
