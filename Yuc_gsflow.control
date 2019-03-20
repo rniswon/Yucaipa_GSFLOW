@@ -14,7 +14,7 @@ GSFLOW5
 start_time
 6
 1
-1990
+1947
 1
 1
 0
@@ -183,7 +183,7 @@ recharge
 init_vars_from_file
 1
 1
-1
+0
 ####
 var_init_file
 1
