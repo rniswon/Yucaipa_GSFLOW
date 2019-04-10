@@ -2,6 +2,9 @@
 *.cbc
 *.list
 *.out
+*.monthly
+*.total
+*.yearly
 output2/
 *.uzfcb2.bin
 *.go
