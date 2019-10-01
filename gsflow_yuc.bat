@@ -1,1 +1,1 @@
-gsflow6.exe Yuc_gsflow.control
+gsflow_2_beta.exe Yuc_gsflow.control
