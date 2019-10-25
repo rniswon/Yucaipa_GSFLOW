@@ -5,7 +5,7 @@ OPTIONS
 	SEEPSURFK
 	SPECIFYTHTI	
 END												
-	4	1	2	1	1	-132	10	300	0	3	#NUZTOP	IUZFOPT	IRUNFLG	IETFLG	ipakcb	IUZFCB2	NTRAIL	NSETS	NUZGAGES																		
+	2	1	2	1	1	-132	10	300	0	3	#NUZTOP	IUZFOPT	IRUNFLG	IETFLG	ipakcb	IUZFCB2	NTRAIL	NSETS	NUZGAGES																		
 OPEN/CLOSE	iuzfbndXX.txt	1	(free)	0	#	UZFBND													
 OPEN/CLOSE	irunbnd.txt	1	(free)	0	#	IRUNBND													
 OPEN/CLOSE	vks.txt	1	(free)	0	#	VKS													
