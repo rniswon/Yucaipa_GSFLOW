@@ -1,0 +1,10 @@
+xul 473715             # upper left x-coordinate
+yul 3771884.9999       # upper left y-coordinate
+rotation 0.0           # model grid rotation (degrees)
+length_units feet      # model length units (feet, meters, etc.)
+time_units days        # model time units (days, years, etc.)
+start_date 1/1/1947    # state date of the model
+start_time 00:00:00    # start time of the model
+model GSFLOW           # model type (MODFLOW-NWT, etc.)
+epsg 26911             # epsg code 
+# NAD83 / California zone 6 (ftUS) 
