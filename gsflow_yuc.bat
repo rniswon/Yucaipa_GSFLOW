@@ -1,2 +1,0 @@
-gsflow_2_beta.exe Yuc_gsflow.control
-pause

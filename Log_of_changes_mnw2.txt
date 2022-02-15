@@ -1,2 +1,0 @@
-- fix smwc for the period before 1992; two annual pumpage data show different values. 
-- smwc is increase by 20% for the period before 1975
