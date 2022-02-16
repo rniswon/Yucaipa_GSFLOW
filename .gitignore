@@ -5,7 +5,8 @@
 *.monthly
 *.total
 *.yearly
-output2/
+CanESM2_rcp45/output2/
 *.uzfcb2.bin
 *.go
 *.chk
+CanESM2_rcp45/output/
