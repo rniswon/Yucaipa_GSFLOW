@@ -15,8 +15,8 @@ UZF               19  ..\external_files\yucaipa_ext.uzf
 #HOB               39  ..\external_files\yucaipa_multi_layer6.hob 
 NWT               32  ..\external_files\yucaipa.nwt
 # restart data
-IRED              40  restartdata_2013.out
-#IWRT              91 restartdata_2013.out
+#IRED              40  restartdata_2013.out
+IWRT              91 restartdata_2013.out
 # out
 #DATA              53  output\yucaipa_CanESM2_rcp45.hob.out
 DATA              81  output\yucaipa_CanESM2_rcp45.sfr.out

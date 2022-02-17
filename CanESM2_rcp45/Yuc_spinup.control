@@ -15,7 +15,7 @@ start_time
 6
 1
 1947
-4
+1
 1
 0
 0
@@ -24,8 +24,8 @@ start_time
 end_time
 6
 1
-1948
-12
+1947
+3
 31
 0
 0
@@ -34,7 +34,7 @@ end_time
 modflow_name
 1
 4
-yucaipa_CanESM2_rcp45.nam
+yucaipa_spinup.nam
 ####
 modflow_time_zero
 6
@@ -183,7 +183,7 @@ recharge
 init_vars_from_file
 1
 1
-1
+0
 ####
 var_init_file
 1
@@ -193,7 +193,7 @@ prms_ic_1.ic
 save_vars_to_file
 1
 1
-0
+1
 ####
 var_save_file
 1
