@@ -16,15 +16,21 @@ def getmonth(df, fld, param):
     return ar_mm
 
 
-def local_quantile_correction(obs_data, mod_data, sce_data, modified=True):
-    mdata = mod_data[~np.isnan(mod_data)]
-    #dmask = np.ma.masked_where(mod_data<0.05, mod_data)
-    randrain = 0.05 * np.random.randn(len(mod_data))
-    mdata = np.where(mdata<0.05, randrain, mdata)
+def local_quantile_correction(obs_data, mod_data, sce_data, par, cutoff, modified=True):
+    #mdata = mod_data[~np.isnan(mod_data)]
+    if par=='ppt':
+        print('model zero: {}'.format(len(mod_data[mod_data<cutoff])))
+        print('obs zero: {}'.format(len(obs_data[obs_data==0.])))
+        randrain = cutoff * np.random.randn(len(mod_data))
+        randrain = randrain + abs(np.min(randrain))
+        mdata = np.where(mod_data<cutoff, randrain, mod_data)
+    else:
+        mdata = mod_data
     cdf = ECDF(mdata)
     #cdf = ECDF(mod_data) # not used because of nan values being used in correction
     p = cdf(sce_data) * 100
     cor = np.subtract(*[np.nanpercentile(x, p) for x in [obs_data, mod_data]])
+    corrected = sce_data + cor
     if modified:
         mid = np.subtract(*[np.nanpercentile(x, 50) for x in [obs_data, mod_data]])
         g = np.true_divide(*[np.nanpercentile(x, 50) for x in [obs_data, mod_data]])
@@ -34,19 +40,17 @@ def local_quantile_correction(obs_data, mod_data, sce_data, modified=True):
         cor = g * mid + f * (cor - mid)
         return sce_data + cor
     else:
-        return sce_data + cor
+        return np.where(corrected<cutoff,0.,corrected)
+
 
 
 import numpy as np
 from statsmodels.distributions.empirical_distribution import ECDF
-from scipy.stats import gamma, norm
-from scipy.signal import detrend
 import pandas as pd
 from datetime import datetime, timedelta
-from bias_correction import BiasCorrection, XBiasCorrection
-import xarray as xr
 from matplotlib import pyplot as plt
 
+plothist= True
 modlist = ['CanESM2', 'CNRMCM5', 'HadGEM2ES', 'MIROC5']
 paramlist = ['tmx', 'tmn', 'ppt']
 scenlist = ['rcp45', 'rcp85']
@@ -85,46 +89,26 @@ for modindex in range(4):
             model_data = df_mod_obs[fld].values
             #model_data_s = model_data[:, np.newaxis, np.newaxis]
             model_month = getmonth(df_mod_obs, fld, paramlist[paramindex])
-
+            cor_hist = local_quantile_correction(obs_data, model_data, model_data, paramlist[paramindex], 0.05, False)
+            df_mod_obs['cor_hist'] = cor_hist
+            cor_hist_mo = getmonth(df_mod_obs,'cor_hist',paramlist[paramindex])
             # now get the model future data
             fld = '{}_{}_{}'.format(modlist[modindex], scenlist[scenindex], paramlist[paramindex])
             sce_data = df_sce[fld].values
             sce_month = getmonth(df_sce, fld, paramlist[paramindex])
-            #sce_data_s = sce_data[:, np.newaxis, np.newaxis]
-            #lat = range(1)
-            #lon = range(1)
-            #
-            #strt = datetime.isoformat(startdate)[:10]
-            #enddt = datetime.isoformat(enddate)[:10]
-            # all data has been loaded, make xarrays for the bias-correct library
-            #xobs_data = xr.DataArray(obs_data_s, dims=['time','lat','lon'], coords=[pd.date_range(strt, enddt, freq='D'), lat, lon])
-            #xmodel_data = xr.DataArray(model_data_s, dims=['time','lat','lon'], coords=[pd.date_range(strt, enddt, freq='D'), lat, lon])
-            #xsce_data = xr.DataArray(sce_data_s, dims=['time','lat','lon'], coords=[pd.date_range(strt_sce, enddt_sce, freq='D'), lat, lon])
-
-            # build the BiasCorrection object with just the historical period and correct the GCM historical data
-            #ds = xr.Dataset({'obs_data':xobs_data, 'model_data':xmodel_data, 'sce_data': xsce_data})
-            correct_values = local_quantile_correction(obs_data, model_data, sce_data, False)
-            correct_values = np.where(correct_values<0.05,0.,correct_values)
-            #correct_values = quantile_correction(ds['obs_data'], ds['model_data'], ds['sce_data'], False)
-            #xbc = XBiasCorrection(reference, model, data_to_be_corrected)
-            #bc = XBiasCorrection(ds['obs_data'], ds['model_data'], ds['sce_data'])
-            #if paramindex == 2:
-            #    df2 = bc.correct(method='basic_quantile_ppt')
-            #else:
-            #df2 = bc.correct(method='basic_quantile')
-            #correct_values = df2.values[0][0]
-            #correct_values[correct_values<0]=0.
-            #correct_values = correct_values[~np.isnan(correct_values)]
+            correct_values = local_quantile_correction(obs_data, model_data, sce_data, paramlist[paramindex], 0.05, False)
             df_sce['corrected'] = correct_values
             cor_month = getmonth(df_sce, 'corrected', paramlist[paramindex])
             # plot months
             molist = [10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9]
             monames = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep']
             fig, ax = plt.subplots(figsize=(10, 7), tight_layout=True)
-            ax.plot(monames, obs_month, color='skyblue', lw=0.7, label='observed')
-            ax.plot(monames, model_month, color='darkblue', lw=0.7, label='model')
-            ax.plot(monames, sce_month, color='limegreen', lw=0.7, label='future uncor')
-            ax.plot(monames, cor_month, color='forestgreen', lw=0.7, label='future corrected')
+            ax.plot(monames, obs_month, color='skyblue', lw=0.8, label='observed')
+            ax.plot(monames, model_month, color='darkorange', lw=0.8, label='corrected model')
+            ax.plot(monames, model_month, color='darkblue', lw=0.8, label='model')
+            ax.plot(monames, sce_month, color='limegreen', lw=0.8, label='future uncor')
+            ax.plot(monames, cor_month, color='forestgreen', lw=0.8, label='future corrected')
+
             ax.legend()
             if paramlist[paramindex]=='ppt':
                 ax.set_title('monthly mean total precipitation {}_{}'.format(modlist[modindex],
