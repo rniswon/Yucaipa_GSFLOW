@@ -19,16 +19,12 @@ def quantile_correction(obs_data, mod_data, ar_sce, par, cutoff):
     correct = np.where(correct<0., 0., correct)
     return correct
 
-
-
 import numpy as np
 from statsmodels.distributions.empirical_distribution import ECDF
 import pandas as pd
 from datetime import datetime, timedelta
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib import pyplot as plt
-from bias_correction import BiasCorrection, XBiasCorrection
-import xarray as xr
 
 ##################################################################################
 # this script performs bias correction on 8 GCM data sets of precipitation
@@ -73,11 +69,12 @@ ar_obs = df_mod_obs[par]
 df_cor_hist = pd.DataFrame()
 ar_h_date = df_mod_hist['date']
 df_cor_hist['date'] = df_mod_hist['date']
-########################################################
+#########################################################################################
 # perform the bias correction on the historical period and plot the cdf for each model
 # each model has 2 GHG scenarios: RCP45 and RCP85
-########################################################
+#########################################################################################
 # historical
+i = 0
 fig_h, ax_h = plt.subplots(figsize=(10, 7), tight_layout=True)
 ax_h.plot(ar_h_date, np.cumsum(ar_obs), color='blue', lw=1.0, label='observed ppt')
 for mod in modlist:
@@ -106,6 +103,7 @@ plt.show()
 
 ########################################################
 # future
+colorlist = ['forestgreen', 'seagreen', 'limegreen', 'chartreuse', 'firebrick', 'red', 'chocolate', 'orange']
 fig_s, ax_s = plt.subplots(figsize=(10, 7), tight_layout=True)
 for scen in scenlist:
     for mod in modlist:
@@ -118,7 +116,8 @@ for scen in scenlist:
         cor_sce = quantile_correction(obs_data=ar_obs, mod_data=ar_model, ar_sce=ar_sce, par=par, cutoff=0.)
         df_cor_sce[fld] = cor_sce
         # plot the results
-        ax_s.plot(ar_sce_date, np.cumsum(cor_sce), lw=0.6, label='{} {}'.format(mod, scen))
+        ax_s.plot(ar_sce_date, np.cumsum(cor_sce), color=colorlist[i], lw=0.6, label='{} {}'.format(mod, scen))
+        i += 1
 
 df_cor_sce.to_csv('gcm_table_corrected.csv', index=False)
 # plot future cumulative precip
