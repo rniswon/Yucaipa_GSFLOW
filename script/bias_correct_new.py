@@ -1,5 +1,5 @@
 def quantile_correction(obs_data, mod_data, ar_sce, par, cutoff):
-    #mdata = mod_data[~np.isnan(mod_data)]
+    mod_data = mod_data[~np.isnan(mod_data)]
     # This routine sets precip values less than cutoff to a random value
     if cutoff > 0. and par=='ppt':
         randrain = cutoff * np.random.randn(len(mod_data))
@@ -11,7 +11,7 @@ def quantile_correction(obs_data, mod_data, ar_sce, par, cutoff):
         correct = ar_sce + cor
 
     else:
-        cdf = ECDF(mod_data)
+        cdf = ECDF(mod_data[~np.isnan(mod_data)])
         #cdf = ECDF(mod_data) # not used because of nan values being used in correction
         p = cdf(ar_sce) * 100
         cor = np.subtract(*[np.nanpercentile(x, p) for x in [obs_data, mod_data]])
@@ -19,11 +19,16 @@ def quantile_correction(obs_data, mod_data, ar_sce, par, cutoff):
     correct = np.where(correct<0., 0., correct)
     return correct
 
+
+
 import numpy as np
 from statsmodels.distributions.empirical_distribution import ECDF
 import pandas as pd
 from datetime import datetime, timedelta
+from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib import pyplot as plt
+from bias_correction import BiasCorrection, XBiasCorrection
+import xarray as xr
 
 ##################################################################################
 # this script performs bias correction on 8 GCM data sets of precipitation
@@ -32,10 +37,9 @@ from matplotlib import pyplot as plt
 #  author: Derek Ryter
 #
 ##################################################################################
+saveplots = True
 modlist = ['CanESM2', 'CNRMCM5', 'HadGEM2ES', 'MIROC5']
-wet_cutoff_list = [0.02, 0.03, 0.03, 0.02, 0.01]
 par = 'ppt'
-#paramlist = ['tmx', 'tmn', 'ppt']
 paramlist = ['ppt']
 scenlist = ['rcp45', 'rcp85']
 ######################################################################
@@ -65,7 +69,6 @@ enddatesce = df_sce['date'].max()
 enddt_sce = datetime.isoformat(enddatesce)[:10]
 # historic period arrays that won't change
 ar_obs = df_mod_obs[par]
-cdf_obs = ECDF(ar_obs)
 # load a DataFrame with the corrected results to save later
 df_cor_hist = pd.DataFrame()
 ar_h_date = df_mod_hist['date']
@@ -73,56 +76,92 @@ df_cor_hist['date'] = df_mod_hist['date']
 ########################################################
 # perform the bias correction on the historical period and plot the cdf for each model
 # each model has 2 GHG scenarios: RCP45 and RCP85
+########################################################
+# historical
 fig_h, ax_h = plt.subplots(figsize=(10, 7), tight_layout=True)
-ax_h.plot(ar_h_date, np.cumsum(ar_obs), lw=1.0, label='observed ppt')
-fig_s, ax_s = plt.subplots(figsize=(10, 7), tight_layout=True)
+ax_h.plot(ar_h_date, np.cumsum(ar_obs), color='blue', lw=1.0, label='observed ppt')
 for mod in modlist:
-    for scen in scenlist:
-        fld_hst = '{}_hst_{}'.format(mod, par)
-        ar_model = df_mod_obs[fld_hst].values
-        # perform bias correction on the model data and add the result to the DataFrame
-        cor_hist = quantile_correction(obs_data=ar_obs, mod_data=ar_model, ar_sce=ar_model, par=par, cutoff=0.)
-        df_cor_hist[fld_hst] = cor_hist
-        # plot results
-        ax_h.plot(ar_h_date, np.cumsum(cor_hist), label=fld_hst)
+    fld_hst = '{}_hst_{}'.format(mod, par)
+    ar_model = df_mod_obs[fld_hst].values
+    # perform bias correction on the model data and add the result to the DataFrame
+    cor_hist = quantile_correction(obs_data=ar_obs, mod_data=ar_model, ar_sce=ar_model, par=par, cutoff=0.)
+    df_cor_hist[fld_hst] = cor_hist
+    # plot results
+    ax_h.plot(ar_h_date, np.cumsum(cor_hist), lw=0.6, label=mod)
+# save corrected precip data
+df_cor_hist.to_csv('gcm_hist_table_cor.csv', index=False)
+# plot historical cumulative precip
+ax_h.set_title('Bias-corrected and observed cumulative precipitation, historical model period')
+ax_h.set_xlim(df_mod_obs['date'].min(), df_mod_obs['date'].max())
+ax_h.set_ylim(0,800)
+ax_h.yaxis.set_minor_locator(MultipleLocator(25))
+ax_h.set_ylabel('cumulative precipitation in inches', fontsize=12)
+ax_h.set_xlabel('year', fontsize=12)
+ax_h.xaxis.set_tick_params(which='both', direction='in', labelsize=10)
+ax_h.yaxis.set_tick_params(which='both', direction='in', labelsize=10)
+ax_h.legend(fancybox=False, edgecolor='black', framealpha=1.)
+if saveplots:
+    plt.savefig('./plots/cumulative_ppt_hist.png')
+plt.show()
 
+########################################################
+# future
+fig_s, ax_s = plt.subplots(figsize=(10, 7), tight_layout=True)
+for scen in scenlist:
+    for mod in modlist:
         # get the future data
         fld = '{}_{}_{}'.format(mod, scen, par)
         ar_sce = df_sce[fld].values
+        fld_hst = '{}_hst_{}'.format(mod, par)
+        ar_model = df_mod_obs[fld_hst].values
         # bias correct the future model and add it to the DataFrame
         cor_sce = quantile_correction(obs_data=ar_obs, mod_data=ar_model, ar_sce=ar_sce, par=par, cutoff=0.)
-
+        df_cor_sce[fld] = cor_sce
         # plot the results
-        ax_s.plot(ar_sce_date, np.cumsum(cor_sce), label=fld)
+        ax_s.plot(ar_sce_date, np.cumsum(cor_sce), lw=0.6, label='{} {}'.format(mod, scen))
 
 df_cor_sce.to_csv('gcm_table_corrected.csv', index=False)
-df_cor_hist.to_csv('gcm_hist_table_cor.csv', index=False)
-ax_h.set_title('Cumulative precipitation, historical model period')
-ax_h.set_ylim(0,800)
-ax_h.set_ylabel('cumulative precipitation in inches', fontsize=9)
-ax_h.legend()
-ax_s.set_title('Cumulative precipitation, future model period')
-ax_s.set_ylabel('cumulative precipitation in inches', fontsize=9)
-ax_h.set_ylim(0,1600)
-ax_s.legend()
+# plot future cumulative precip
+ax_s.set_title('Bias-corrected cumulative precipitation, future model period')
+ax_s.set_ylabel('cumulative precipitation in inches', fontsize=12)
+ax_s.set_xlabel('year', fontsize=12)
+ax_s.set_xlim(df_sce['date'].min(), df_sce['date'].max())
+ax_s.xaxis.set_tick_params(which='both', direction='in', labelsize=10)
+ax_s.yaxis.set_tick_params(which='both', direction='in', labelsize=10)
+ax_s.set_ylim(0,1600)
+ax_s.yaxis.set_minor_locator(MultipleLocator(50))
+ax_s.legend(fancybox=False, edgecolor='black', framealpha=1.)
+if saveplots:
+    plt.savefig('./plots/cumulative_ppt_future.png')
 plt.show()
 
+############################################## plot the cdfs
+cdf_obs = ECDF(ar_obs[ar_obs>0])
+linewt = 0.9
 for mod in modlist:
     for scen in scenlist:
         fld = '{}_{}_{}'.format(mod, scen, par)
         fld_hst = '{}_hst_{}'.format(mod, par)
-        fig_c, ax_c = plt.subplots(figsize=(6, 6), tight_layout=True)
+        fig_c, ax_c = plt.subplots(figsize=(7, 6), tight_layout=True)
         # plot cdf for obs data
         ax_c.plot(cdf_obs.x, cdf_obs.y, color='blue', lw=0.9, label='observed')
         # plot cdfs for historical model
-        cdf_mod_hist_cor = ECDF(df_cor_hist[fld_hst])
-        ax_c.plot(cdf_mod_hist_cor.x, cdf_mod_hist_cor.y, color='orange', lw=0.7, label='hist model corrected')
-        cdf_mod_hist_unc = ECDF(df_mod_hist[fld_hst])
-        ax_c.plot(cdf_mod_hist_unc.x, cdf_mod_hist_unc.y, color='red', lw=0.7, label='hist model uncorrected')
+        cdf_mod_hist_unc = ECDF(df_mod_hist[fld_hst][df_mod_hist[fld_hst]>0])
+        ax_c.plot(cdf_mod_hist_unc.x, cdf_mod_hist_unc.y, color='orange', lw=linewt, label='historical model uncorrected')
+        cdf_mod_sce_unc = ECDF(df_sce[fld][df_sce[fld]>0])
+        ax_c.plot(cdf_mod_sce_unc.x, cdf_mod_sce_unc.y, color='limegreen', lw=linewt, label='GCM model uncorrected')
+        cdf_mod_hist_cor = ECDF(df_cor_hist[fld_hst][df_cor_hist[fld_hst]>0])
+        ax_c.plot(cdf_mod_hist_cor.x, cdf_mod_hist_cor.y, color='red', lw=linewt, label='historical model corrected')
         # get the uncorrected cdf
-        cdf_mod_sce_unc = ECDF(df_sce[fld])
-        ax_c.plot(cdf_mod_sce_unc.x, cdf_mod_sce_unc.y, color='lime', lw=0.7, label='GCM model uncorrected')
         # get the corrected cdf
-        cdf_mod_sce_cor = ECDF(df_cor_sce[fld])
-        ax_c.plot(cdf_mod_sce_cor.x, cdf_mod_sce_cor.y, color='green', lw=0.7, label='GCM model corrected')
+        cdf_mod_sce_cor = ECDF(df_cor_sce[fld][df_cor_sce[fld]>0])
+        ax_c.plot(cdf_mod_sce_cor.x, cdf_mod_sce_cor.y, color='green', lw=linewt, label='GCM model corrected')
+        ax_c.set_title('Empirical CDFs for model {} scenario {}'.format(mod, scen))
+        ax_c.set_xlim(0,3.0)
+        ax_c.xaxis.set_tick_params(which='both', direction='in', labelsize=10)
+        ax_c.yaxis.set_tick_params(which='both', direction='in', labelsize=10)
+        ax_c.set_ylim(0,1.1)
+        ax_c.legend(loc='lower right', fancybox=False, edgecolor='black', framealpha=1.)
+        if saveplots:
+            plt.savefig('./plots/cdf_{}_{}.png'.format(mod, scen))
         plt.show()

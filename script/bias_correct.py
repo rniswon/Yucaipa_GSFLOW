@@ -95,9 +95,9 @@ for modindex in range(4):
     xmod_fix = xr.DataArray(model_data_s, dims=['time','lat','lon'], coords=[pd.date_range(strt, enddt, freq='D'), lat, lon])
 
     # build the BiasCorrection object with just the historical period and correct the GCM historical data
-    #ds = xr.Dataset({'obs_data':xobs_data, 'model_data':xmodel_data, 'sce_data': xsce_data})
-    #bc = XBiasCorrection(ds['obs_data'], ds['model_data'], ds['sce_data'])
-    bc = XBiasCorrection(xobs_data, xmodel_data, xmod_fix)
+    ds = xr.Dataset({'obs_data':xobs_data, 'model_data':xmodel_data, 'sce_data': xmod_fix})
+    bc = XBiasCorrection(ds['obs_data'], ds['model_data'], ds['sce_data'])
+    #bc = XBiasCorrection(xobs_data, xmodel_data, xmod_fix)
     if paramindex==2:
         df2 = bc.correct(method='basic_quantile')
     else:
