@@ -12,7 +12,7 @@ def getdf_bud(fname, startingsp):
     df_bud['date'] = ar_date
     return df_bud
 
-def plot_contour(xvalue, yvalue, zvalue, stat = 'mean', bins = 150):
+def plot_contour(xvalue, yvalue, zvalue, stat = 'mean', bins = 20):
     ret = stats.binned_statistic_2d(xvalue, yvalue, zvalue, stat, bins = bins)
     x = ret.x_edge[1:]
     y = ret.y_edge[1:]
@@ -53,16 +53,33 @@ zerodate = datetime(1947, 1, 1)
 date_columns = ['year', 'month', 'day']
 colorlist = ['blue', 'red', 'green', 'chocolate', 'blue', 'red', 'green', 'chocolate']
 cats = ['recharge', 'net_stream', 'net_storage', 'GWET_OUT']
+ar_yrs = np.arange(2015, 2100)
+# get the mean annual t and ppt for the historical period
+df_data = pd.read_csv('../data_files/Yucaipa_CanESM2_rcp45.data', skiprows=skipcount,
+                      names=data_cols, delim_whitespace=True)
+df_data = df_data.loc[df_data['year']<2015]
+df_data['tmean'] = (df_data['tmn1'] + df_data['tmx1']) / 2
+meantemp = df_data['tmean'].mean()
+# get the mean annual ppt
+ar_meanppt = np.array([], dtype=float)
+# could have used pd roll function but the years don't have the same number of days
+for yr in ar_yrs:
+    df = df_data.loc[df_data['year']==yr]
+    ar_meanppt = np.append(ar_meanppt, df['ppt'].sum())
+meanppt = np.mean(ar_meanppt)
 
 for cat in cats:
     for mod in modlist:
         i = 0
-        fig, ax = plt.subplots(figsize=(8,6),tight_layout=True)
         for scen in scenlist:
+            # plot binned budget for this model. To overlay them move this before mod and
+            # the lines at the end
+            fig, ax = plt.subplots(figsize=(8,6),tight_layout=True)
+            print()
             ## read the MDOFLOW budget extracted by zonebud
             df_bud = getdf_bud('../data_files/yuczone_yucaipa_{}_{}.csv.2.csv'.format(mod, scen), 716)
             ## read the input data file
-            datafilename = OPJ(root, '{0:}_{1:}'.format(mod, scen),'input','Yucaipa_{0:}_{1:}.data'.format(mod, scen))
+            datafilename = '../data_files/Yucaipa_{0:}_{1:}.data'.format(mod, scen)
             df_data = pd.read_csv(datafilename, skiprows=skipcount, names=data_cols, delim_whitespace=True)
             ar_date = np.array([], dtype='datetime64')
             for index, row in df_data.iterrows():
@@ -70,11 +87,24 @@ for cat in cats:
             df_data['date'] = ar_date
             df_plot_data = df_data.merge(df_bud, left_on='date', right_on='date')
             df_plot_data['tmean'] = (df_plot_data['tmn1'] + df_plot_data['tmx1']) / 2
-
-            x, y, z = plot_contour(df_plot_data['ppt'].values, df_plot_data['tmean'].values, df_plot_data[cat].values)
+            # get the mean annual temperature as a deviation from the historical mean annual temp
+            # get the total annual precipitation as a deviation from the mean annual precipitation
+            # get the total flow for the current budget category
+            # load these annual values into arrays
+            ar_t = np.array([],dtype=float)
+            ar_p = np.array([],dtype=float)
+            ar_bud = np.array([],dtype=float)
+            for yr in ar_yrs:
+                df = df_plot_data.loc[df_plot_data['year']==yr]
+                ar_t = np.append(ar_t, df['tmean'].mean()-meantemp)
+                ar_p = np.append(ar_p, df['ppt'].mean()-meanppt)
+                ar_bud = np.append(ar_bud, df[cat].sum())
+            # bin the budget values with their corresponding temp and ppt
+            x, y, z = plot_contour(ar_p, ar_t, ar_bud)
             #
             cs = ax.contourf(x, y, z, cmap=cm.PuBu_r)
             cbar = fig.colorbar(cs)
+
             i += 1
             ax.set_ylabel('temperature')
             ax.set_xlabel('precipitation')
