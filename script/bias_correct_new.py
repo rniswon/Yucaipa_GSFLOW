@@ -16,7 +16,8 @@ def quantile_correction(obs_data, mod_data, ar_sce, par, cutoff):
         p = cdf(ar_sce) * 100
         cor = np.subtract(*[np.nanpercentile(x, p) for x in [obs_data, mod_data]])
         correct = ar_sce + cor
-    correct = np.where(correct<0., 0., correct)
+        if par=='ppt':
+            correct = np.where(correct<0., 0., correct)
     return correct
 
 import numpy as np
@@ -36,7 +37,7 @@ from matplotlib import pyplot as plt
 saveplots = True
 modlist = ['CanESM2', 'CNRMCM5', 'HadGEM2ES', 'MIROC5']
 par = 'ppt'
-paramlist = ['ppt']
+paramlist = ['ppt', 'tmn', 'tmx']
 scenlist = ['rcp45', 'rcp85']
 ######################################################################
 
@@ -63,8 +64,6 @@ startdatesce = df_sce['date'].min()
 strt_sce = datetime.isoformat(startdatesce)[:10]
 enddatesce = df_sce['date'].max()
 enddt_sce = datetime.isoformat(enddatesce)[:10]
-# historic period arrays that won't change
-ar_obs = df_mod_obs[par]
 # load a DataFrame with the corrected results to save later
 df_cor_hist = pd.DataFrame()
 ar_h_date = df_mod_hist['date']
@@ -75,61 +74,64 @@ df_cor_hist['date'] = df_mod_hist['date']
 #########################################################################################
 # historical
 i = 0
-fig_h, ax_h = plt.subplots(figsize=(10, 7), tight_layout=True)
-ax_h.plot(ar_h_date, np.cumsum(ar_obs), color='blue', lw=1.0, label='observed ppt')
-for mod in modlist:
-    fld_hst = '{}_hst_{}'.format(mod, par)
-    ar_model = df_mod_obs[fld_hst].values
+#fig_h, ax_h = plt.subplots(figsize=(10, 7), tight_layout=True)
+#ax_h.plot(ar_h_date, np.cumsum(ar_obs), color='blue', lw=1.0, label='observed ppt')
+#for mod in modlist:
+#    fld_hst = '{}_hst_{}'.format(mod, par)
+#    ar_model = df_mod_obs[fld_hst].values
     # perform bias correction on the model data and add the result to the DataFrame
-    cor_hist = quantile_correction(obs_data=ar_obs, mod_data=ar_model, ar_sce=ar_model, par=par, cutoff=0.)
-    df_cor_hist[fld_hst] = cor_hist
+#    cor_hist = quantile_correction(obs_data=ar_obs, mod_data=ar_model, ar_sce=ar_model, par=par, cutoff=0.)
+#    df_cor_hist[fld_hst] = cor_hist
     # plot results
-    ax_h.plot(ar_h_date, np.cumsum(cor_hist), lw=0.6, label=mod)
+    #ax_h.plot(ar_h_date, np.cumsum(cor_hist), lw=0.6, label=mod)
 # save corrected precip data
-df_cor_hist.to_csv('gcm_hist_table_cor.csv', index=False)
+#df_cor_hist.to_csv('gcm_hist_table_cor.csv', index=False)
 # plot historical cumulative precip
-ax_h.set_title('Bias-corrected and observed cumulative precipitation, historical model period')
-ax_h.set_xlim(df_mod_obs['date'].min(), df_mod_obs['date'].max())
-ax_h.set_ylim(0,800)
-ax_h.yaxis.set_minor_locator(MultipleLocator(25))
-ax_h.set_ylabel('cumulative precipitation in inches', fontsize=12)
-ax_h.set_xlabel('year', fontsize=12)
-ax_h.xaxis.set_tick_params(which='both', direction='in', labelsize=10)
-ax_h.yaxis.set_tick_params(which='both', direction='in', labelsize=10)
-ax_h.legend(fancybox=False, edgecolor='black', framealpha=1.)
-if saveplots:
-    plt.savefig('./plots/cumulative_ppt_hist.png')
-plt.show()
+#ax_h.set_title('Bias-corrected and observed cumulative precipitation, historical model period')
+#ax_h.set_xlim(df_mod_obs['date'].min(), df_mod_obs['date'].max())
+#ax_h.set_ylim(0,800)
+#ax_h.yaxis.set_minor_locator(MultipleLocator(25))
+#ax_h.set_ylabel('cumulative precipitation in inches', fontsize=12)
+#ax_h.set_xlabel('year', fontsize=12)
+#ax_h.xaxis.set_tick_params(which='both', direction='in', labelsize=10)
+#ax_h.yaxis.set_tick_params(which='both', direction='in', labelsize=10)
+#ax_h.legend(fancybox=False, edgecolor='black', framealpha=1.)
+#if saveplots:
+#    plt.savefig('./plots/cumulative_ppt_hist.png')
+#plt.show()
 
 ########################################################
 # future
 colorlist = ['forestgreen', 'seagreen', 'limegreen', 'chartreuse', 'firebrick', 'red', 'chocolate', 'orange']
-fig_s, ax_s = plt.subplots(figsize=(10, 7), tight_layout=True)
+#fig_s, ax_s = plt.subplots(figsize=(10, 7), tight_layout=True)
 for scen in scenlist:
     for mod in modlist:
-        # get the future data
-        fld = '{}_{}_{}'.format(mod, scen, par)
-        ar_sce = df_sce[fld].values
-        fld_hst = '{}_hst_{}'.format(mod, par)
-        ar_model = df_mod_obs[fld_hst].values
-        # bias correct the future model and add it to the DataFrame
-        cor_sce = quantile_correction(obs_data=ar_obs, mod_data=ar_model, ar_sce=ar_sce, par=par, cutoff=0.)
-        df_cor_sce[fld] = cor_sce
-        # plot the results
-        ax_s.plot(ar_sce_date, np.cumsum(cor_sce), color=colorlist[i], lw=0.6, label='{} {}'.format(mod, scen))
-        i += 1
+        for par in paramlist:
+            # historic period arrays that won't change
+            ar_obs = df_mod_obs[par]
+            # get the future data
+            fld = '{}_{}_{}'.format(mod, scen, par)
+            ar_sce = df_sce[fld].values
+            fld_hst = '{}_hst_{}'.format(mod, par)
+            ar_model = df_mod_obs[fld_hst].values
+            # bias correct the future model and add it to the DataFrame
+            cor_sce = quantile_correction(obs_data=ar_obs, mod_data=ar_model, ar_sce=ar_sce, par=par, cutoff=0.)
+            df_cor_sce[fld] = cor_sce
+            # plot the results
+            #ax_s.plot(ar_sce_date, np.cumsum(cor_sce), color=colorlist[i], lw=0.6, label='{} {}'.format(mod, scen))
+            #i += 1
 
 df_cor_sce.to_csv('gcm_table_corrected.csv', index=False)
 # plot future cumulative precip
-ax_s.set_title('Bias-corrected cumulative precipitation, future model period')
-ax_s.set_ylabel('cumulative precipitation in inches', fontsize=12)
-ax_s.set_xlabel('year', fontsize=12)
-ax_s.set_xlim(df_sce['date'].min(), df_sce['date'].max())
-ax_s.xaxis.set_tick_params(which='both', direction='in', labelsize=10)
-ax_s.yaxis.set_tick_params(which='both', direction='in', labelsize=10)
-ax_s.set_ylim(0,1600)
-ax_s.yaxis.set_minor_locator(MultipleLocator(50))
-ax_s.legend(fancybox=False, edgecolor='black', framealpha=1.)
+#ax_s.set_title('Bias-corrected cumulative precipitation, future model period')
+#ax_s.set_ylabel('cumulative precipitation in inches', fontsize=12)
+#ax_s.set_xlabel('year', fontsize=12)
+#ax_s.set_xlim(df_sce['date'].min(), df_sce['date'].max())
+#ax_s.xaxis.set_tick_params(which='both', direction='in', labelsize=10)
+#ax_s.yaxis.set_tick_params(which='both', direction='in', labelsize=10)
+#ax_s.set_ylim(0,1600)
+#ax_s.yaxis.set_minor_locator(MultipleLocator(50))
+#ax_s.legend(fancybox=False, edgecolor='black', framealpha=1.)
 if saveplots:
     plt.savefig('./plots/cumulative_ppt_future.png')
 plt.show()
