@@ -60,7 +60,7 @@ for cat in cats:
         for scen in scenlist:
             fig, ax = plt.subplots(figsize=(8,6),tight_layout=True)
             ## read the MDOFLOW budget extracted by zonebud
-            df_bud = getdf_bud('yuczone_yucaipa_{}_{}.csv.2.csv'.format(mod, scen), 716)
+            df_bud = getdf_bud('../data_files/yuczone_yucaipa_{}_{}.csv.2.csv'.format(mod, scen), 716)
             ## read the input data file
             datafilename = OPJ(root, '{0:}_{1:}'.format(mod, scen),'input','Yucaipa_{0:}_{1:}.data'.format(mod, scen))
             df_data = pd.read_csv(datafilename, skiprows=skipcount, names=data_cols, delim_whitespace=True)

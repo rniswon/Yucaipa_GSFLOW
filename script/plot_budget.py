@@ -53,7 +53,7 @@ def plotcats(btype):
                 lstyle = '-'
             df_mean = pd.DataFrame()
             for mod in modlist:
-                fname = './full_model_budgets/yuczone_yucaipa_{}_{}.csv.2.csv'.format(mod, scen)
+                fname = '../data_files/yuczone_yucaipa_{}_{}.csv.2.csv'.format(mod, scen)
                 if os.path.isfile(fname):   # not all the budget files might be done, so plot it if it is
                     df_bud=getdf_bud(fname, startingsp)
                     if btype == 'cum':
@@ -67,7 +67,7 @@ def plotcats(btype):
                         ax.set_ylabel('cumulative flow in acre feet', fontsize=9)
                         ax.set_title('Cumulative {} for the Yucaipa GW Basin'.format(lablist[j].title()))
                         ax.set_xlim(np.min(df_bud['date'].values), np.max(df_bud['date'].values))
-                        outname = OPJ(plotFolder, 'yuc_gsflow_{}_{}.png'.format(cat.replace(' ', '_'), btype))
+                        outname = '../report_figs/yuc_gsflow_{}_{}.png'.format(cat.replace(' ', '_'), btype)
                         titlestr = 'Cumulative {} for the Yucaipa GW Basin'.format(lablist[j].title())
                     else:
                         n2 = n/2
@@ -84,7 +84,7 @@ def plotcats(btype):
                         #ax.set_ylim(ymn, ymx)
                         ax.set_ylabel('flow in acre feet {} year moving average'.format(n), fontsize=9)
                         plt.axhline(0, lw=0.6)
-                        outname = OPJ(plotFolder, 'yuc_gsflow_depart_{}_{}.png'.format(cat.replace(' ', '_'), btype))
+                        outname = '../report_figs/yuc_gsflow_depart_{}_{}.png'.format(cat.replace(' ', '_'), btype)
                         titlestr = '{} deviation from mean for the Yucaipa GW Basin'.format(lablist[j].title())
                     c+=1
                     del df_bud
@@ -113,7 +113,7 @@ def plotgsflow(btype):
             else:
                 lstyle = '-'
             for mod in modlist:
-                fname = './full_model_budgets/gsflow_{}_{}.csv'.format(mod, scen)
+                fname = '../data_files/gsflow_{}_{}.csv'.format(mod, scen)
                 if os.path.isfile(fname):   # not all the budget files might be done, so plot it if it is
                     df_gsflow = pd.read_csv(fname)
                     df_gsflow['Date'] = pd.to_datetime(df_gsflow['Date'])
@@ -149,12 +149,12 @@ def plotgsflow(btype):
         if btype=='cum':
             ax.set_title('Cumulative {} for the Yucaipa GSFLOW model'.format(cat))
             ax.set_ylabel('cumulative flow in acre feet', fontsize=9)
-            outname = OPJ(plotFolder, 'yuc_{}_{}.png'.format(cat.replace(' ', '_'), btype))
+            outname = '../report_figs/yuc_{}_{}.png'.format(cat.replace(' ', '_'), btype)
             ax.legend(loc='best', title='Model used', title_fontsize=8, fontsize=7, ncol=2, fancybox=False, edgecolor='black')
         else:
             ax.set_xlim(np.min(ar_yr_flt), np.max(ar_yr_flt))
             plt.axhline(0, lw=0.6)
-            outname = OPJ(plotFolder, 'yuc_{}_depart_{}.png'.format(cat.replace(' ', '_'), btype))
+            outname = '../report_figs/yuc_{}_depart_{}.png'.format(cat.replace(' ', '_'), btype)
             ax.set_ylabel('flow in acre feet', fontsize=9)
             ax.set_title('{} departure from mean for the Yucaipa GW Basin full model'.format(cat))
             ax.legend(loc='best', title='Model used (mean deviation)', title_fontsize=8, fontsize=7, ncol=2, fancybox=False, edgecolor='black')
@@ -220,8 +220,8 @@ colorlist = ['blue', 'red', 'green', 'chocolate', 'blue', 'red', 'green', 'choco
 lslist = ['-', '--', '-', '--', '-', '--', '-', '--', '-', '--']
 zerodate = datetime(1947, 1, 1)
 # get base model budget
-df_base = getdf_bud('./full_model_budgets/yuczone_base_model.2.csv', 1)
-df_gs_base = pd.read_csv('./full_model_budgets/gsflow_base.csv', header=0)   # historical period model for stats
+df_base = getdf_bud('../data_files/yuczone_base_model.2.csv', 1)
+df_gs_base = pd.read_csv('../data_files/gsflow_base.csv', header=0)   # historical period model for stats
 df_gs_base['Date'] = pd.to_datetime(df_gs_base['Date'])
 ar_yrs = np.arange(1947, 2015)
 df_gs_mean = pd.DataFrame(columns=['year'] + catlist)
