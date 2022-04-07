@@ -1,3 +1,13 @@
+import matplotlib.pyplot as plt
+from matplotlib import ticker, cm
+import numpy as np
+from scipy import stats
+import pandas as pd
+from datetime import datetime, timedelta
+import os
+import seaborn as sns
+from tqdm import tqdm
+
 def getdf_bud(fname, startingsp):
     df_bud = pd.read_csv(fname, names=cols, skiprows=1, sep='[\s,]{2,20}')    # use this delimiter because of spaces in the header line
     df_bud = df_bud[(df_bud['ZONE']==2) & (df_bud['PERIOD']>startingsp)]
@@ -25,13 +35,6 @@ def plot_contour(xvalue, yvalue, zvalue, stat = 'mean', bins = 150):
     return x, y, z
 
 
-import matplotlib.pyplot as plt
-from matplotlib import ticker, cm
-import numpy as np
-from scipy import stats
-import pandas as pd
-from datetime import datetime, timedelta
-import os
 
 OPJ = os.path.join
 thisFolder = os.getcwd()
@@ -61,41 +64,53 @@ colorlist = ['blue', 'red', 'green', 'chocolate', 'blue', 'red', 'green', 'choco
 cats = ['recharge', 'net_stream', 'net_storage', 'GWET_OUT']
 
 for cat in cats:
-    for mod in modlist:
+    all_scenarios = []
+    fig, ax = plt.subplots(figsize=(8, 6), tight_layout=True)
+    for mod in tqdm(modlist):
         i = 0
-        fig, ax = plt.subplots(figsize=(8,6),tight_layout=True)
         for scen in scenlist:
             ## read the MDOFLOW budget extracted by zonebud
             df_bud = getdf_bud('../data_files/yuczone_yucaipa_{}_{}.csv.2.csv'.format(mod, scen), 716)
+            df_bud['year'] = df_bud['date'].dt.year
+            df_bud['month'] = df_bud['date'].dt.month
+            annual_bud = df_bud.groupby(by=['year']).mean().reset_index()
+
             ## read the input data file
-            # datafilename = OPJ(root, '{0:}_{1:}'.format(mod, scen),'Yucaipa_{0:}_{1:}.data'.format(mod, scen))
             datafilename = os.path.join(data_folder, 'Yucaipa_{0:}_{1:}.data'.format(mod, scen) )
             df_data = pd.read_csv(datafilename, skiprows=skipcount, names=data_cols, delim_whitespace=True)
-            df_data['tmean'] = (df_data['tmn1'] + df_data['tmx1'])*0.5
-            historical_climate = df_data[df_data['year']<=2014]
-
             # the loop slows down the code.. this is cleaner
             df_data['date'] = pd.to_datetime(df_data[['year', 'month', 'day']])
+            df_data['tmean'] = (df_data['tmn1'] + df_data['tmx1'])*0.5
 
-            #ar_date = np.array([], dtype='datetime64')
-            # for index, row in df_data.iterrows():
-            #     ar_date = np.append(ar_date, datetime(int(row['year']), int(row['month']), int(row['day'])))
-            # df_data['date'] = ar_date
+            datafilename = os.path.join(data_folder, 'gsflow_{0:}_{1:}.csv'.format(mod, scen))
+            gsflow_bdg = pd.read_csv(datafilename)
 
-            df_plot_data = df_bud.merge(df_data, how = 'left', on = 'date')
-            #df_plot_data['tmean'] = (df_plot_data['tmn1'] + df_plot_data['tmx1']) / 2
+            annual_climate_data = df_data.groupby('year').mean().reset_index()
+            historical_climate = annual_climate_data[annual_climate_data['year']<=2014]
 
-            ppt_ = df_plot_data['ppt'].values - historical_climate['ppt'].mean()
-            tmean_ = df_plot_data['tmean'].values  - historical_climate['tmean'].mean()
-            x, y, z = plot_contour(ppt_,tmean_ , df_plot_data[cat].values)
+
+
+            df_plot_data = annual_bud.merge(annual_climate_data, how = 'left', on = 'year')
+            df_plot_data['model'] = mod
+            df_plot_data['scenario'] = scen
+            all_scenarios.append(df_plot_data.copy())
+
+
+
+           # plt.scatter(ppt_.mean(), tmean_.mean(), c = df_plot_data[cat].mean() ) # , c=df_plot_data[cat]
+            # x, y, z = plot_contour(ppt_,tmean_ , df_plot_data[cat].values)
             #
-            cs = ax.contourf(x, y, z, cmap=cm.PuBu_r)
-            cbar = fig.colorbar(cs)
-            i += 1
-            ax.set_ylabel('temperature')
-            ax.set_xlabel('precipitation')
-            ax.set_title('Yucaipa GW Basin: {} for {}_{} model'.format(cat, mod, scen))
-            if saveplots:
-                plt.savefig(OPJ(root, 'yucaipa_git', 'Yucaipa_GSFLOW', 'report_figs',
-                                'plot_{}_{}_{}.png'.format(mod, cat, scen)))
-            plt.show()
+            # cs = ax.contourf(x, y, z, cmap=cm.PuBu_r)
+            #cbar = fig.colorbar(cs)
+            # i += 1
+            # ax.set_ylabel('temperature')
+            # ax.set_xlabel('precipitation')
+            # ax.set_title('Yucaipa GW Basin: {} for {}_{} model'.format(cat, mod, scen))
+            # if saveplots:
+            #     plt.savefig(OPJ(root, 'yucaipa_git', 'Yucaipa_GSFLOW', 'report_figs',
+            #                     'plot_{}_{}_{}.png'.format(mod, cat, scen)))
+            # plt.show()
+    all_scenarios = pd.concat(all_scenarios)
+    sns.violinplot(data=all_scenarios, x='model', y=cat, hue='scenario', split=True)
+    ppt_ = df_plot_data['ppt'].values - historical_climate['ppt'].mean()
+    tmean_ = df_plot_data['tmean'].values - historical_climate['tmean'].mean()
