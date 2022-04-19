@@ -34,6 +34,7 @@ OPJ = os.path.join
 thisFolder = os.getcwd()
 root = os.path.sep.join(thisFolder.split(os.path.sep)[:-3])
 saveplots = True
+
 ###############################################################################################
 # models to plot
 modlist = ['CanESM2', 'CNRMCM5', 'HadGEM2ES', 'MIROC5']
