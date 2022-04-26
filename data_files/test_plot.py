@@ -6,8 +6,8 @@ def getdf(name):
     return df
 
 
-import seaborn as sns
 import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 from datetime import datetime
 import numpy as np
@@ -20,6 +20,7 @@ df_45 = df_45.loc[df_45['year']>2014]
 df_85 = getdf('gsflow_CanESM2_rcp85.csv')
 df_all = df_45.merge(df_85, left_on='Date', right_on='Date', suffixes=['_45', '_85'])
 df_month = df_all.groupby(['year_45', 'month_45'])[cat + '_45', cat + '_85'].sum().reset_index()
+
 ##################################
 # base model
 df_base = getdf('gsflow_base.csv')
